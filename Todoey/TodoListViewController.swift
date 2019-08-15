@@ -9,10 +9,11 @@
 import UIKit
 import RealmSwift
 
-class TodoListViewController: UITableViewController {
+class TodoListViewController: SwipeTableViewController {
+    
+    let realm = try! Realm()
     
     var todoItems : Results<Item>?
-    let realm = try! Realm()
     
     var selectedCategory : Category? {
         didSet {
@@ -28,15 +29,18 @@ class TodoListViewController: UITableViewController {
     }
 
     //MARK: - Tableview Datasource Methods
+
+    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return todoItems?.count ?? 1
+    }
+
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
+        
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
         if let item = todoItems?[indexPath.row] {
             cell.textLabel?.text = item.title
-            
-            // Ternary operator
-            // value = condition ? valuIfTrue : valueIfFalse
             
             cell.accessoryType = item.done ? .checkmark : .none
         } else {
@@ -46,9 +50,6 @@ class TodoListViewController: UITableViewController {
         return cell
     }
     
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return todoItems?.count ?? 1
-    }
     
     //MARK: - Tableview Delegate Methods
     
@@ -69,19 +70,7 @@ class TodoListViewController: UITableViewController {
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
-    //MARK: - Data Manipulation Methods
-    
-//    func saveItems() {
-//
-//
-//        do {
-////            try context.save()
-//
-//        } catch {
-//            print("Error saving context, \(error)")
-//        }
-//        tableView.reloadData()
-//    }
+    //MARK: - Load Items
     
     func loadItems() {
         
@@ -91,6 +80,7 @@ class TodoListViewController: UITableViewController {
     }
 
     //MARK: - Add New Items
+    
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         
         var textField = UITextField()
@@ -120,8 +110,24 @@ class TodoListViewController: UITableViewController {
         alert.addAction(action)
         present(alert, animated: true, completion: nil)
     }
+    
+    //MARK: Delete Data
+    
+    override func updateModel(at indexPath: IndexPath) {
         
+        if let todoItemsForDeletion = self.todoItems?[indexPath.row] {
+            do {
+                try self.realm.write {
+                    self.realm.delete(todoItemsForDeletion)
+                }
+            } catch {
+                print("Error deleting item, \(error)")
+            }
+        }
+    }
+
 }
+
 
 //MARK: - Search Bar Method
 
